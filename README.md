@@ -17,6 +17,7 @@ uv sync
 ### Configure Azure OpenAI
 
 Copy the example secrets file and fill in the Azure OpenAI API key, endpoint, and deployment name.
+
 ```bash
 cp insta-bot/fastagent.secrets.yaml.example insta-bot/fastagent.secrets.yaml
 ```

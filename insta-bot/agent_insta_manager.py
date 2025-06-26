@@ -37,7 +37,7 @@ fast = FastAgent("Instagram Sales Assistant")
     instruction=(
         "You are an AI classifier working for the Customer Support Manager. "
         "Given a list of messages from a chat thread, analyze the latest message and determine its intent. "
-        "The possible intents are: 'inquiry', 'order', 'support', or 'feedback'. "
+        "The possible intents are: 'inquiry', 'order', 'support', or 'escalation'. "
         "Return only the intent label as a lowercase string (e.g., 'order')."
     ),
     model="azure.gpt-4.1-nano",
@@ -48,9 +48,10 @@ fast = FastAgent("Instagram Sales Assistant")
         "You are a helpful support agent that responds to customer inquiries. "
         "Given a customer question or general inquiry message, generate a clear, friendly, and informative response. "
         "Responses should reflect the tone and offerings of Pumpernickel Bakery. "
-        "If necessary, refer to known services or menu items, but do not fabricate."
+        "If necessary, refer to known services or menu items, but do not fabricate information."
     ),
     model="azure.gpt-4.1-nano",
+    servers=["bakery_mcp"],
 )
 @fast.agent(
     name="OrderAgent",
@@ -61,6 +62,7 @@ fast = FastAgent("Instagram Sales Assistant")
         "If any order detail is missing, ask the customer to clarify."
     ),
     model="azure.gpt-4.1-nano",
+    servers=["bakery_mcp"],
 )
 @fast.agent(
     name="SupportAgent",
@@ -71,6 +73,7 @@ fast = FastAgent("Instagram Sales Assistant")
         "The tone should be caring, calm, and resolution-oriented."
     ),
     model="azure.gpt-4.1-nano",
+    servers=["bakery_mcp"],
 )
 @fast.agent(
     name="ResponseSender",
@@ -87,11 +90,13 @@ fast = FastAgent("Instagram Sales Assistant")
     name="EscalationHandler",
     instruction=(
         "You are the escalation agent for Pumpernickel Bakery's customer support. "
-        "Your task is to identify when a customer issue cannot be fully resolved by AI agents and must be escalated to a human staff member. "
-        "When invoked, politely inform the customer that their message has been escalated to a human representative. "
-        "Clearly explain that someone from the team will follow up shortly, and thank the customer for their patience. "
-        "The tone should be professional, calm, and reassuring. "
-        "Do not attempt to resolve the issue—your only job is to communicate that the conversation has been handed off to a human."
+        "Your task is: when a customer issue cannot be fully resolved by AI agents, escalate it to a human staff member."
+        "When invoked, politely inform the customer that their message will be escalated to a human representative."
+        "Clearly explain that someone from the team will follow up shortly, and thank the customer for their patience."
+        "The tone should be professional, calm, and reassuring."
+        "Do not attempt to resolve the issue."
+        "Your only job is to communicate that the conversation has been handed off to a human."
+        "And then inform the human about the issue."
     ),
     model="azure.gpt-4.1-nano",
     human_input=True,

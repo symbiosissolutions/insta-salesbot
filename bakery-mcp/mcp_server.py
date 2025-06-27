@@ -263,40 +263,82 @@ def get_full_menu() -> Dict[str, Any]:
 
 @mcp.tool()
 def search_products(
-    query: str = "", category: str = "", max_price: int = 0, min_price: int = 0
+    query: str = "",
+    category: str = "",
+    max_price: int = 0,
+    min_price: int = 0,
+    use_semantic: bool = True,
 ) -> Dict[str, Any]:
     """
-    Search products by name, category, or price range.
+    Search products by name, category, or price range. Supports semantic similarity search if enabled.
 
     Args:
         query: Search term to match against product names and descriptions
         category: Filter by category (chocolate_cake, cheesecake, specialty_cake, seasonal)
         max_price: Maximum price filter (0 = no limit)
         min_price: Minimum price filter (0 = no limit)
+        use_semantic: If True, use semantic similarity for query (default: True)
     """
     try:
         results = []
+        product_texts = [f"{p.name}. {p.description}" for p in PRODUCT_CATALOG]
+        matched_products = []
 
-        for product in PRODUCT_CATALOG:
-            # Check if product matches search criteria
-            if (
-                query
-                and query.lower() not in product.name.lower()
-                and query.lower() not in product.description.lower()
-            ):
-                continue
+        if query and use_semantic:
+            try:
+                # --- Semantic search using sentence-transformers ---
+                # pip install sentence-transformers
+                from sentence_transformers import SentenceTransformer, util
+                import numpy as np
 
-            if category and product.category.value != category:
-                continue
+                # You may want to cache/load the model globally in production
+                model = SentenceTransformer("all-MiniLM-L6-v2")
+                query_emb = model.encode(query, convert_to_tensor=True)
+                product_embs = model.encode(product_texts, convert_to_tensor=True)
+                cosine_scores = (
+                    util.pytorch_cos_sim(query_emb, product_embs)[0].cpu().numpy()
+                )
+                # Rank products by similarity
+                ranked = np.argsort(-cosine_scores)
+                for idx in ranked:
+                    product = PRODUCT_CATALOG[idx]
+                    score = float(cosine_scores[idx])
+                    # Filter by category and price
+                    if category and product.category.value != category:
+                        continue
+                    price_8inch = product.sizes.get("8inch", 0)
+                    if max_price > 0 and price_8inch > max_price:
+                        continue
+                    if min_price > 0 and price_8inch < min_price:
+                        continue
+                    matched_products.append((product, score))
+                # Only include products with a reasonable similarity threshold
+                results = [
+                    p.to_dict() | {"similarity": s}
+                    for p, s in matched_products
+                    if s > 0.3
+                ][:10]
+            except ImportError:
+                # Fallback to keyword search if sentence-transformers not installed
+                use_semantic = False
 
-            # Check price range (using 8inch price as reference)
-            price_8inch = product.sizes.get("8inch", 0)
-            if max_price > 0 and price_8inch > max_price:
-                continue
-            if min_price > 0 and price_8inch < min_price:
-                continue
-
-            results.append(product.to_dict())
+        if not use_semantic or not query:
+            for product in PRODUCT_CATALOG:
+                # Check if product matches search criteria
+                if (
+                    query
+                    and query.lower() not in product.name.lower()
+                    and query.lower() not in product.description.lower()
+                ):
+                    continue
+                if category and product.category.value != category:
+                    continue
+                price_8inch = product.sizes.get("8inch", 0)
+                if max_price > 0 and price_8inch > max_price:
+                    continue
+                if min_price > 0 and price_8inch < min_price:
+                    continue
+                results.append(product.to_dict())
 
         return {
             "results": results,
@@ -307,6 +349,7 @@ def search_products(
                 "price_range": f"{min_price}-{max_price}"
                 if min_price or max_price
                 else "any",
+                "semantic": use_semantic,
             },
         }
     except Exception as e:
@@ -479,6 +522,153 @@ def get_contact_options() -> Dict[str, Any]:
 # ===============================
 # MCP Tools - Order Management
 # ===============================
+
+
+@mcp.resource()
+def order_information_requirements() -> Dict[str, Any]:
+    """
+    Resource describing the information required from a customer to place an order.
+    """
+    return {
+        "fields": [
+            {"name": "name", "required": True, "description": "Customer's full name."},
+            {
+                "name": "address",
+                "required": "Required for delivery",
+                "description": "Delivery address. Not needed for pickup.",
+            },
+            {
+                "name": "item_ordered",
+                "required": True,
+                "description": "Item(s) ordered. Try to extract from message and/or image.",
+            },
+            {
+                "name": "contact_number",
+                "required": True,
+                "description": "Customer's primary contact number.",
+            },
+            {
+                "name": "alternative_number",
+                "required": False,
+                "description": "Alternative contact number (optional).",
+            },
+            {
+                "name": "delivery_or_pickup",
+                "required": True,
+                "description": "Specify 'delivery' or 'pickup'.",
+            },
+            {
+                "name": "date",
+                "required": True,
+                "description": "Preferred date for delivery or pickup.",
+            },
+            {
+                "name": "time",
+                "required": True,
+                "description": "Preferred time for delivery or pickup.",
+            },
+            {
+                "name": "payment_method",
+                "required": True,
+                "description": "Payment method: Fonepay QR, Stripe, Khalti (directs to website).",
+            },
+            {
+                "name": "message_on_cake",
+                "required": False,
+                "description": "Optional message to be written on the cake.",
+            },
+        ],
+        "notes": [
+            "Address is only required for delivery orders.",
+            "Try to extract item ordered from customer message or image if possible.",
+            "Offer both delivery and pickup options, with calendar date & time.",
+            "Ask for contact number if not available.",
+            "Alternative number and cake message are optional fields.",
+            "Payment methods supported: Fonepay QR, Stripe, Khalti (directs to payment website).",
+        ],
+    }
+
+
+@mcp.tool()
+def receive_order_details(
+    name: str = "",
+    address: str = "",
+    item_ordered: str = "",
+    contact_number: str = "",
+    alternative_number: str = "",
+    delivery_or_pickup: str = "",
+    date: str = "",
+    time: str = "",
+    payment_method: str = "",
+    message_on_cake: str = "",
+) -> Dict[str, Any]:
+    """
+    Receive and validate order details from the customer.
+
+    Args:
+        name: Customer's name (required)
+        address: Delivery address (required for delivery)
+        item_ordered: Item(s) ordered (try to extract from message/image)
+        contact_number: Customer's contact number (required)
+        alternative_number: Optional alternative contact number
+        delivery_or_pickup: 'delivery' or 'pickup' (required)
+        date: Preferred date for delivery/pickup (required)
+        time: Preferred time for delivery/pickup (required)
+        payment_method: Payment method (Fonepay QR, Stripe, Khalti, Card)
+        message_on_cake: Optional message to be written on the cake
+    """
+    try:
+        errors = []
+        if not name:
+            errors.append("Name is required.")
+        if not item_ordered:
+            errors.append("Item ordered is required.")
+        if not contact_number:
+            errors.append("Contact number is required.")
+        if not delivery_or_pickup:
+            errors.append("Please specify delivery or pickup.")
+        if not date:
+            errors.append("Date is required.")
+        if not time:
+            errors.append("Time is required.")
+        if delivery_or_pickup.lower() == "delivery" and not address:
+            errors.append("Address is required for delivery.")
+        if not payment_method:
+            errors.append("Payment method is required.")
+
+        if errors:
+            return {"error": "Missing required fields.", "details": errors}
+
+        order_summary = {
+            "name": name,
+            "address": address if delivery_or_pickup.lower() == "delivery" else "N/A",
+            "item_ordered": item_ordered,
+            "contact_number": contact_number,
+            "alternative_number": alternative_number,
+            "delivery_or_pickup": delivery_or_pickup,
+            "date": date,
+            "time": time,
+            "payment_method": payment_method,
+            "message_on_cake": message_on_cake,
+        }
+
+        # Payment method links (for reference)
+        payment_links = {
+            "fonepay qr": "https://fonepay.com/qr",
+            "stripe": "https://stripe.com/pay",
+            "khalti": "https://khalti.com/",
+        }
+        payment_link = payment_links.get(payment_method.lower(), "")
+        if payment_link:
+            order_summary["payment_link"] = payment_link
+
+        return {
+            "order_summary": order_summary,
+            "status": "Order details received successfully. Please confirm to proceed.",
+        }
+    except Exception as e:
+        logger.error(f"Error receiving order details: {e}")
+        return {"error": "Failed to receive order details."}
 
 
 @mcp.tool()
@@ -686,6 +876,66 @@ def generate_pickup_reminder(
     except Exception as e:
         logger.error(f"Error generating pickup reminder: {e}")
         return {"error": "Failed to generate pickup reminder"}
+
+
+@mcp.tool()
+def schedule_delivery_with_calendar(
+    name: str,
+    address: str,
+    contact_number: str,
+    date: str,
+    time: str,
+    item_ordered: str,
+    delivery_notes: str = "",
+) -> Dict[str, Any]:
+    """
+    Schedule a delivery for an order using Google Calendar integration.
+
+    Args:
+        name: Customer's name
+        address: Delivery address
+        contact_number: Customer's contact number
+        date: Delivery date (YYYY-MM-DD)
+        time: Delivery time (HH:MM, 24-hour format)
+        item_ordered: Item(s) ordered
+        delivery_notes: Optional notes for delivery
+    Returns:
+        Confirmation and calendar event link (if successful)
+    """
+    try:
+        # Combine date and time for event start
+        from datetime import datetime, timedelta
+
+        event_start = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+        event_end = event_start + timedelta(hours=1)
+
+        event = {
+            "summary": f"Delivery for {name}",
+            "location": address,
+            "description": f"Order: {item_ordered}\nContact: {contact_number}\nNotes: {delivery_notes}",
+            "start": {
+                "dateTime": event_start.isoformat(),
+                "timeZone": "Asia/Kathmandu",
+            },
+            "end": {"dateTime": event_end.isoformat(), "timeZone": "Asia/Kathmandu"},
+        }
+
+        # --- Google Calendar API integration placeholder ---
+        # Here you would use the Google Calendar API to insert the event.
+        # For example, using google-api-python-client:
+        # service.events().insert(calendarId='primary', body=event).execute()
+        # For now, we'll return a mock event link.
+        event_link = f"https://calendar.google.com/calendar/r/eventedit?text=Delivery+for+{name.replace(' ', '+')}&dates={event_start.strftime('%Y%m%dT%H%M%S')}/{event_end.strftime('%Y%m%dT%H%M%S')}&details=Order:+{item_ordered.replace(' ', '+')}+Contact:+{contact_number}+Notes:+{delivery_notes.replace(' ', '+')}&location={address.replace(' ', '+')}"
+
+        return {
+            "status": "Delivery scheduled (mock)",
+            "event_link": event_link,
+            "event_details": event,
+            "note": "Replace mock integration with Google Calendar API for production use.",
+        }
+    except Exception as e:
+        logger.error(f"Error scheduling delivery: {e}")
+        return {"error": "Failed to schedule delivery."}
 
 
 if __name__ == "__main__":

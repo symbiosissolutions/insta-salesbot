@@ -33,6 +33,9 @@ mcp:
     bakery_mcp:
       transport: http
       url: http://localhost:4300/bakery-mcp
+    agent_bakery_mcp:
+      transport: http
+      url: http://localhost:8001/mcp
     sequential_thinking:
       command: "npx" 
       args: ["@modelcontextprotocol/server-sequential-thinking"]

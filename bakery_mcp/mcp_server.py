@@ -524,7 +524,7 @@ def get_contact_options() -> Dict[str, Any]:
 # ===============================
 
 
-@mcp.resource()
+@mcp.resource("info://order_requirements")
 def order_information_requirements() -> Dict[str, Any]:
     """
     Resource describing the information required from a customer to place an order.
@@ -833,52 +833,6 @@ def check_allergen_info(product_name: str, allergen: str = "") -> Dict[str, Any]
 
 
 @mcp.tool()
-def generate_pickup_reminder(
-    order_items: List[Dict[str, Any]], pickup_time: str = ""
-) -> Dict[str, Any]:
-    """
-    Generate a pickup reminder message for customers.
-
-    Args:
-        order_items: List of ordered items
-        pickup_time: Preferred pickup time
-    """
-    try:
-        order_calc = calculate_order_total(order_items)
-        if "error" in order_calc:
-            return order_calc
-
-        if not pickup_time:
-            pickup_time = "during business hours (6:30 AM - 9:00 PM)"
-
-        reminder = f"🔔 *Pickup Reminder - Pumpernickel Bakery*\n\n"
-        reminder += f"Your order is ready for pickup!\n\n"
-        reminder += "*Order Summary:*\n"
-
-        for item in order_calc["items"]:
-            reminder += f"• {item['product']} ({item['size']}) x{item['quantity']}\n"
-
-        reminder += f"\n💰 Total: {order_calc['total']}\n\n"
-        reminder += f"📍 Pickup Location: {BUSINESS_INFO.address}\n"
-        reminder += f"🕒 Pickup Time: {pickup_time}\n"
-        reminder += f"📞 Contact: {BUSINESS_INFO.phone}\n\n"
-        reminder += "Thank you for choosing Pumpernickel Bakery! 🥧"
-
-        return {
-            "reminder_message": reminder,
-            "pickup_location": BUSINESS_INFO.address,
-            "contact_info": {
-                "phone": BUSINESS_INFO.phone,
-                "whatsapp": BUSINESS_INFO.whatsapp,
-            },
-            "maps_link": BUSINESS_INFO.maps_link,
-        }
-    except Exception as e:
-        logger.error(f"Error generating pickup reminder: {e}")
-        return {"error": "Failed to generate pickup reminder"}
-
-
-@mcp.tool()
 def schedule_delivery_with_calendar(
     name: str,
     address: str,
@@ -936,6 +890,53 @@ def schedule_delivery_with_calendar(
     except Exception as e:
         logger.error(f"Error scheduling delivery: {e}")
         return {"error": "Failed to schedule delivery."}
+
+
+@mcp.resource("resource://instagram_links_of_products")
+def instagram_links_of_products() -> Dict[str, List]:
+    """
+    Resource describing links to instagram posts for products.
+    """
+    return {
+        "Triple Chocolate Cake": [
+            "https://www.instagram.com/reel/DLRmK00TvhI/?utm_source=ig_web_copy_link&igsh=bm9idXptdDBjMzdh",
+            "https://www.instagram.com/reel/C8O6hPMtF8Z/?utm_source=ig_web_copy_link&igsh=MXhxN282bmNubHVmaQ==",
+            "https://www.instagram.com/reel/DEWgmSDtc3s/?utm_source=ig_web_copy_link&igsh=bHpmMXhraG94cWd0",
+        ],
+        "Blueberry Cheesecake": [
+            "https://www.instagram.com/reel/C8osfX7trvx/?utm_source=ig_web_copy_link&igsh=MW10aTN0NmY5MmVweQ=="
+        ],
+        "Strawberry Cheesecake": [
+            "https://www.instagram.com/reel/C8jiU2itGo0/?utm_source=ig_web_copy_link&igsh=cGd0OG96MDUxanNx"
+        ],
+        "Brownie Cake": [
+            "https://www.instagram.com/reel/C9fHOqCN4Jb/?utm_source=ig_web_copy_link&igsh=MW9jYXRxeWkydjRkcw=="
+        ],
+        "Scarlet Cheesecake": [
+            "https://www.instagram.com/reel/DCrFzcvN3ea/?utm_source=ig_web_copy_link&igsh=ZTU4cjh5ODRlMzU2",
+            "https://www.instagram.com/reel/DCgB6PayUrk/?utm_source=ig_web_copy_link&igsh=aDJxNXVxbGRxbTd5",
+        ],
+        "Raffaello Cake": [
+            "https://www.instagram.com/reel/DEzOWMiyplM/?utm_source=ig_web_copy_link&igsh=MWQxcWljaW56b2Nvdw==",
+            "https://www.instagram.com/reel/C_IgJI1tnZT/?utm_source=ig_web_copy_link&igsh=N3Z0eGN1dXBjeXh4",
+        ],
+        "Snickers Delight": [
+            "https://www.instagram.com/reel/DET7Deyt43d/?utm_source=ig_web_copy_link&igsh=MXRndnV3ajU5bXphMQ==",
+            "https://www.instagram.com/reel/C_K9pvnuWO4/?utm_source=ig_web_copy_link&igsh=MXJ6YTlhMzNjMHM4YQ==",
+        ],
+        "Pistachio Cake": [
+            "https://www.instagram.com/reel/DC1Eq15Ob5j/?utm_source=ig_web_copy_link&igsh=eXZlMTk0Z3FtMDY1",
+            "https://www.instagram.com/reel/DGSJRngSR_4/?utm_source=ig_web_copy_link&igsh=MTZpd3RteGN2bHh5cg==",
+        ],
+        "Tiramisu": [
+            "https://www.instagram.com/reel/DHkgaoxNx3P/?utm_source=ig_web_copy_link&igsh=MWE3aG8zYzlndWJveA==",
+            "https://www.instagram.com/p/DBkcSt0SJn2/?utm_source=ig_web_copy_link&igsh=MWhnZmFyN20ycnY5OA==",
+        ],
+        "Mango Mousse": [
+            "https://www.instagram.com/reel/DK6s5-FTMqB/?utm_source=ig_web_copy_link&igsh=eDkzZmtsZG56Nzh5",
+            "https://www.instagram.com/p/DKJ7m6izQdU/?utm_source=ig_web_copy_link&igsh=N2V3ZXhsOHZ0ZmZ0",
+        ],
+    }
 
 
 if __name__ == "__main__":

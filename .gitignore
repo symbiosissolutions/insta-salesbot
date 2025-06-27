@@ -4,3 +4,4 @@
 history.json
 fastagent.secrets.yaml
 fastagent.jsonl
+__pycache__/

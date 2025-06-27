@@ -251,24 +251,11 @@ def get_full_menu() -> Dict[str, Any]:
     Returns detailed information about each product including prices, descriptions, and allergen information.
     """
     try:
-        menu = {
-            "business_info": {
-                "name": BUSINESS_INFO.name,
-                "tagline": BUSINESS_INFO.tagline,
-                "hours": BUSINESS_INFO.hours,
-            },
-            "categories": {},
-            "total_products": len(PRODUCT_CATALOG),
+        products = [product.to_dict() for product in PRODUCT_CATALOG]
+        return {
+            "products": products,
+            "total_products": len(products),
         }
-
-        for product in PRODUCT_CATALOG:
-            category = product.category.value
-            if category not in menu["categories"]:
-                menu["categories"][category] = []
-
-            menu["categories"][category].append(product.to_dict())
-
-        return menu
     except Exception as e:
         logger.error(f"Error getting menu: {e}")
         return {"error": "Failed to retrieve menu"}

@@ -130,6 +130,7 @@ fast = FastAgent("Instagram Sales Assistant")
         "IntentRouter",
         "ResponseSender",
     ],
+    default=True,
 )
 async def main():
     async with fast.run() as agent:

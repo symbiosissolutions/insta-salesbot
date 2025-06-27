@@ -6,6 +6,7 @@ import os
 import dotenv
 dotenv.load_dotenv()
 from typing import List
+from typing import Optional
 from tools.knowledge import order_information_requirements
 
 
@@ -22,21 +23,21 @@ from google import genai
 
 class Order(BaseModel):
     order_id: str = None
-    name: str
-    address: str
-    user_id: str
-    contact_number: str
-    date: str
-    time: str
-    item_ordered: str
-    delivery_notes: str
-    order_type: str
+    name: Optional[str] = None
+    address: Optional[str] = None
+    user_id: Optional[str] = None
+    contact_number: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    item_ordered: Optional[str] = None
+    delivery_notes: Optional[str] = None
+    order_type: Optional[str] = None
 
 
 class OrderLineItem(BaseModel):
-    item_name: str
-    quantity: int
-    price: float
+    item_name: Optional[str] = None
+    quantity: Optional[int] = None
+    price: Optional[float] = None
 
 
 class OrderManager:
@@ -128,6 +129,9 @@ class OrderManager:
         You are an expert order manager.
         You will be given a user order.
         You will need to create an order.
+
+        - If the time is given as tomorrow, today, etc. convert it to the current date.
+        - If the information is implemente Add N/A or relevant field value
 
         User Order: {user_order}
 

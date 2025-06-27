@@ -120,7 +120,7 @@ fast = FastAgent("Bakery Assistant")
 #     default=True,
 # )
 @fast.agent(
-    name="Customer Support",
+    name="Customer Support Manager",
     instruction=(
         """
         You are a friendly employee at **Pumpernickel Bakery**.
@@ -150,6 +150,7 @@ fast = FastAgent("Bakery Assistant")
 
         Ground Rules:
         - ** IMPORTANT ** Pass as much context as possible to the tool. They are you companions.
+        - ** IMPORTANT ** If the order creation fails because of agent, retry multiple times.
         - Do not invent facts.  If tool fails, apologise and offer manual contact.
         - **IMPORTANT** Before calling the order tools, you need to check if the order details are complete using order_are_order_details_complete tool.
         - Use order tools only when customer is ready to order.

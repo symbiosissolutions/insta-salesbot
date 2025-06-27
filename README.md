@@ -19,7 +19,7 @@ uv sync
 Copy the example secrets file and configure the LLM in `fastagent.secrets.yaml` and `fastagent.config.yaml`
 
 ```bash
-cp insta-bot/fastagent.secrets.yaml.example insta-bot/fastagent.secrets.yaml
+cp insta_bot/fastagent.secrets.yaml.example insta_bot/fastagent.secrets.yaml
 ```
 
 **For Azure OpenAI API**
@@ -39,13 +39,13 @@ For more details: refer here- https://subzeroid.github.io/instagrapi/usage-guide
 Then, run the Instagram MCP server:
 
 ```bash
-uv run insta-mcp/mcp_server.py
+uv run insta_mcp/mcp_server.py
 ```
 
 Next run the Bakery MCP server.
 
 ```bash
-uv run bakery-mcp/mcp_server.py
+uv run bakery_mcp/mcp_server.py
 ```
 
 ### Run the Agents
@@ -56,7 +56,7 @@ Fast Agent enables you to create and interact with sophisticated Agents and Work
 The Bakery Assistant Agents are located in `agent_bakery_assistant.py`. You can interact directly with this assistant using the following command:
 
 ```bash
-cd insta-bot
+cd insta_bot
 uv run agent_bakery_assistant.py
 ```
 
@@ -81,4 +81,4 @@ Run the inspector:
 npx @modelcontextprotocol/inspector
 ```
 
-Choose the `Streamable HTTP` transport type, and the url `http://localhost:8001/mcp`. After clicking the `connect` button, you can interact with the agent from the tools tab. Use the `agent_one_send` tool to send the agent a chat message and see it's response.
+Choose the `Streamable HTTP` transport type, and the url `http://localhost:4300/bakery-mcp`. After clicking the `connect` button, you can interact with the MCP from the tools tab.

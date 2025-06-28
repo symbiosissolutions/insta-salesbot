@@ -3,7 +3,7 @@
 This project is an entry for the [Unhinged MCP Buildathon](https://campus.buildclub.ai/challenges/01978a6b-c2b7-7647-bdf5-b83c7888aef2) hosted by Gala Labs via [Build Club](https://buildclub.ai/).
 It makes use of multi-agent collaboration using [Fast Agent](https://fast-agent.ai/) to automate customer inquiries and product orders. It features a conversational Instagram Bot for a bakery. It combines multi-agent collaboration, Instagram DM support, and custom tools via the MCP protocol.
 
-![lumi chatbot instagram screenshot](insta-ss.png)
+<img src="./insta-ss.png" alt="lumi chatbot instagram screenshot" width="400"/>
 
 ## 🚀 Key Features
 
